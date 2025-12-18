@@ -295,6 +295,43 @@ export const typeOrmConfig = (
 });
 ```
 
+- Importar la entidad en su module
+```ts
+
+import { Module } from '@nestjs/common';
+import { CategoriesService } from './categories.service';
+import { CategoriesController } from './categories.controller';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { Category } from './entities/category.entity';
+
+@Module({
+  imports: [TypeOrmModule.forFeature([Category])],
+  controllers: [CategoriesController],
+  providers: [CategoriesService],
+})
+export class CategoriesModule {}
+```
+
+- Injectar el repository de Category en el Category Service, para poder utilizar los métodos de Typeorm y realizar las consultas a la DB 
+```ts
+  
+  export class CategoriesService {
+    constructor(
+      @InjectRepository(Category)
+      private readonly categoryRepository: Repository<Category>,
+    ) {}
+  }
+
+```
+
+- Utilizar algún metodo del repository para interactuar con la DB, en este caso save, para crear un registro.
+```ts
+create(createCategoryDto: CreateCategoryDto) {
+    return this.categoryRepository.save(createCategoryDto);
+}
+```
+
 ## Entidades
-Tambien conocido como Modelos, en TypeORM se lo conoce como Entidades.
+Es una clase que se mapea con una tabla de tu base de datos.
 En estas podrás definir la estructura de tus tablas y columnas en la base de datos con su tipo de dato.
+Usa el decorador @Entity
