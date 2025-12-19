@@ -462,5 +462,62 @@ export class Category {
 }
 
 ```
+#### Cascade
+Cascade sirve para que las operaciones realizadas sobre una entidad también afecten a sus relaciones en forma de "cascada"
+Ejemplos: 
+- Insert => Al guardar el padre, se inserta los hijos automáticamente si no existen.
+- Remove => Al eliminar al padre, se eliminan los hijos automáticamente.
+- Update => Al actualizar al hijo y guardás al padre, se actualiza el hijo automáticamente.
 
---- 
+Ejemplo de INSERT:
+
+Sin **Cascade**
+```ts
+// SIN INSERT CASCADE
+
+const category = new Category();
+category.name = 'Bebidas';
+
+const product = new Product();
+product.name = 'Coca Cola';
+
+category.products = [product];
+
+await categoryRepository.save(category);
+// ERROR: Product no existe, typeORM no lo crea solo
+```
+
+Ejemplo con **Cascade**:
+```ts
+await categoryRepository.save(category);
+// TypeORM hace solo:
+// INSERT INTO category
+// INSERT INTO product
+// Relación automática
+```
+
+Ejemplo de Update:
+
+Sin **cascade**: 
+```ts
+category.products[0].price = 1500;
+
+await categoryRepository.save(category);
+// No guarda el cambio, debes hacer: await productRepository.save(category.products[0]);
+
+```
+
+Con **cascade**: 
+```ts
+
+category.products[0].price = 1500;
+await categoryRepository.save(category);
+
+// Detecta cambios en Product
+// Ejecuta UPDATE product SET price = 1500
+```
+
+
+**Cuando tienes el cascade y datos relacionados, debes asignarle una instancia de la entidad**
+`product.category = category`
+---
