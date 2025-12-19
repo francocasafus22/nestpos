@@ -3,8 +3,9 @@ import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Product } from './entities/product.entity';
-import { Repository } from 'typeorm';
+import { FindManyOptions, Repository } from 'typeorm';
 import { Category } from '../categories/entities/category.entity';
+import { GetProductQueryDto } from './dto/get-product.dto';
 
 @Injectable()
 export class ProductsService {
@@ -16,19 +17,42 @@ export class ProductsService {
   ) {}
 
   async create(createProductDto: CreateProductDto) {
-    const categoryExist = await this.categoryRepository.findOneBy({
+    const category = await this.categoryRepository.findOneBy({
       id: createProductDto.categoryId,
     });
 
-    if (!categoryExist) {
-      throw new NotFoundException('La categoria no existe');
+    if (!category) {
+      const errors: string[] = [];
+      errors.push('La categoría no existe');
+      throw new NotFoundException(errors);
     }
 
-    return await this.productRepository.save(createProductDto);
+    return await this.productRepository.save({
+      ...createProductDto,
+      category,
+    });
   }
 
-  findAll() {
-    return `This action returns all products`;
+  async findAll(query: GetProductQueryDto) {
+    const options: FindManyOptions<Product> = {
+      relations: {
+        category: true,
+      },
+      order: {
+        id: 'DESC',
+      },
+    };
+
+    if (query.category_id)
+      options.where = { ...options.where, category: { id: query.category_id } };
+
+    const [products, total] =
+      await this.productRepository.findAndCount(options);
+
+    return {
+      products,
+      total,
+    };
   }
 
   findOne(id: number) {
