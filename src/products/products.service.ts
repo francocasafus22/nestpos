@@ -34,6 +34,10 @@ export class ProductsService {
   }
 
   async findAll(query: GetProductQueryDto) {
+    const page = Number(query.page) || 1;
+    const limit = query.take || 10;
+    const skip = (page - 1) * limit;
+
     const options: FindManyOptions<Product> = {
       relations: {
         category: true,
@@ -41,6 +45,8 @@ export class ProductsService {
       order: {
         id: 'DESC',
       },
+      take: limit,
+      skip: skip,
     };
 
     if (query.category_id)
@@ -52,6 +58,8 @@ export class ProductsService {
     return {
       products,
       total,
+      page,
+      totalPages: Math.ceil(total / limit),
     };
   }
 
