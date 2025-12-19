@@ -414,3 +414,53 @@ export class IdValidationPipe extends ParseIntPipe {
     return this.categoriesService.findOne(+id);
   }
 ```
+
+
+---
+
+## ¿Cómo crear relaciones en TypeORM con NestJS ? 
+
+En un ejemplo de products y categories, donde una categoria tendrá muchos productos, y un producto tendrá una sola categoria seria:
+
+Product n --- 1 Category
+
+
+**Product Entity**
+```ts
+@Entity()
+export class Product {
+  @PrimaryGeneratedColumn()
+  id: number;
+
+  @Column({ type: 'varchar', length: 40 })
+  name: string;
+
+  // Decorador para indicar tipo de relación Muchos a uno (n productos - 1 categoria)
+  // Si le indica con un callback que entidad será la relacionada 
+  @ManyToOne(() => Category)
+  category: Category;
+}
+
+```
+
+**Category Entity**
+```ts
+
+@Entity()
+export class Category {
+  @PrimaryGeneratedColumn()
+  id: number;
+
+  @Column({ type: 'varchar', length: 60 })
+  name: string;
+
+  // Decorador que indica relación uno a muchos (1 categoria - n productos)
+  // 1er callback => Entidad con la que se relaciona
+  // 2do callback => Columna donde se encuentra el id de la categoria del producto
+  @OneToMany(() => Product, (product) => product.category, { cascade: true })
+  products: Product[];
+}
+
+```
+
+--- 
