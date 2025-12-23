@@ -9,9 +9,11 @@ import {
   Transaction,
   TransactionContents,
 } from './entities/transaction.entity';
-import { Repository } from 'typeorm';
+import { Between, FindManyOptions, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Product } from '../products/entities/product.entity';
+import { endOfDay, isValid, parseISO, startOfDay } from 'date-fns';
+import { GetTransactionQueryDto } from './dto/get-transaction.dto';
 
 @Injectable()
 export class TransactionsService {
@@ -68,22 +70,77 @@ export class TransactionsService {
       },
     );
 
-    return 'Venta guardada correctamente';
+    return { message: 'Venta guardada correctamente' };
   }
 
-  findAll() {
-    return `This action returns all transactions`;
+  async findAll(query?: GetTransactionQueryDto) {
+    const page = Number(query.page) || 1;
+    const limit = query.take || 10;
+    const skip = (page - 1) * limit;
+
+    const options: FindManyOptions<Transaction> = {
+      relations: {
+        contents: true,
+      },
+      order: {
+        id: 'DESC',
+      },
+      skip: skip,
+      take: limit,
+    };
+
+    if (query.date) {
+      const date = parseISO(query.date);
+      if (!isValid(date)) throw new BadRequestException('Fecha no válida');
+      const start = startOfDay(date);
+      const end = endOfDay(date);
+
+      options.where = {
+        transactionDate: Between(start, end),
+      };
+    }
+
+    const [transactions, total] =
+      await this.transactionRepository.findAndCount(options);
+
+    return {
+      transactions,
+      total,
+      totalPages: Math.ceil(total / limit),
+      page: page,
+    };
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} transaction`;
+  async findOne(id: number) {
+    const transaction = await this.transactionRepository.findOne({
+      where: { id },
+      relations: {
+        contents: true,
+      },
+    });
+    const errors = [];
+    if (!transaction) {
+      errors.push('Venta no encontrada');
+      throw new NotFoundException(errors);
+    }
+    return transaction;
   }
 
-  update(id: number, updateTransactionDto: UpdateTransactionDto) {
-    return `This action updates a #${id} transaction`;
-  }
+  async remove(id: number) {
+    const transaction = await this.findOne(id);
 
-  remove(id: number) {
-    return `This action removes a #${id} transaction`;
+    for (const contents of transaction.contents) {
+      const product = await this.productRepository.findOneBy({
+        id: contents.product.id,
+      });
+      product.inventory += contents.quantity;
+      await this.productRepository.save(product);
+
+      const transactionContents =
+        await this.transactionContentsRepository.findOneBy({ id: contents.id });
+      await this.transactionContentsRepository.remove(transactionContents);
+    }
+    await this.transactionRepository.remove(transaction);
+    return { message: 'Venta eliminada correctamente' };
   }
 }

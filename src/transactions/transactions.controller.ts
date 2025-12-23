@@ -6,10 +6,13 @@ import {
   Patch,
   Param,
   Delete,
+  Query,
 } from '@nestjs/common';
 import { TransactionsService } from './transactions.service';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { UpdateTransactionDto } from './dto/update-transaction.dto';
+import { GetTransactionQueryDto } from './dto/get-transaction.dto';
+import { IdValidationPipe } from '../common/pipes/id-validation/id-validation.pipe';
 
 @Controller('transactions')
 export class TransactionsController {
@@ -21,21 +24,13 @@ export class TransactionsController {
   }
 
   @Get()
-  findAll() {
-    return this.transactionsService.findAll();
+  findAll(@Query() query: GetTransactionQueryDto) {
+    return this.transactionsService.findAll(query);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
+  findOne(@Param('id', IdValidationPipe) id: string) {
     return this.transactionsService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(
-    @Param('id') id: string,
-    @Body() updateTransactionDto: UpdateTransactionDto,
-  ) {
-    return this.transactionsService.update(+id, updateTransactionDto);
   }
 
   @Delete(':id')
