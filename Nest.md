@@ -521,3 +521,58 @@ await categoryRepository.save(category);
 **Cuando tienes el cascade y datos relacionados, debes asignarle una instancia de la entidad**
 `product.category = category`
 ---
+
+## Transacciones BD
+Las transacciones en Bases de Datos permiten agrupar tareas en una sola ejecución.
+Cada Transacción comiensza con un trabajo en especifico y finaliza hasta que la última tarea del grupo es ejecutada correctamente.
+Si una de las tareas falla, toda la transacción falla; por lo tanto una transacción solo tiene 2 resultados: éxito o falla.
+
+Las transacciones cumplen con las propiedades ACID.
+**Atomicity - Atomicidad**: El resultado de una transacción puede ser completamente exitoso o completamente fallido. Si una parte falla, toda la transacción debe ser revertida.
+**Consistency - Consistencia**: Las transacciones mantienen las restricciones de integridad al mover la base de datos de un estado válido a otro.
+**Isolation - Aislamiento**: Las transacciones concurrentes están aisladas entre sí, asegurando la precisión de los datos.
+**Durability - Durabiidad**: Una vez que una transacción se confirma, sus modificaciones permanecen en efecto incluso en caso ed una falla del sistema.
+
+**Las transacciones son un grupo de tareas que se deben cumplir todas, pero si una falla todas se revierten.**
+
+### ¿Cómo crear una transaccion?
+
+```ts
+async create(createTransactionDto: CreateTransactionDto) {
+  // Define la transacción
+  await this.productRepository.manager.transaction(
+    async (transactionEntityManager) => { // transactionEntityManager se utilizará para realizar las consultas a la DB
+      const transaction = new Transaction();
+      transaction.total = createTransactionDto.total;
+
+      for (const contents of createTransactionDto.contents) {
+        // Se le pasa la Entity para que sepa en que tabla buscar
+        const product = await transactionEntityManager.findOneBy(Product, {
+          id: contents.productId,
+        });
+
+        if (contents.quantity > product.inventory)
+          throw new BadRequestException(
+            `El articulo ${product.name} excede la cantidad disponible`,
+          );
+
+        product.inventory -= contents.quantity;
+
+        // Create TransactionContents instance
+        // Se crea la instancia para que sepa en que tabla guardar los datos de transaction contents
+        const transactionContent = new TransactionContents();
+        transactionContent.price = contents.price;
+        transactionContent.product = product;
+        transactionContent.quantity = contents.quantity;
+        transactionContent.transaction = transaction;
+
+        await transactionEntityManager.save(transaction);
+        await transactionEntityManager.save(transactionContent);
+        // Con pasarle la instancia ya supone donde guardar los datos
+      }
+    },
+  );
+
+  return 'Venta guardada correctamente';
+}
+```

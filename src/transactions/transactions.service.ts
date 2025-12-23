@@ -1,4 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { UpdateTransactionDto } from './dto/update-transaction.dto';
 import {
@@ -21,23 +25,48 @@ export class TransactionsService {
   ) {}
 
   async create(createTransactionDto: CreateTransactionDto) {
-    const transaction = new Transaction();
-    transaction.total = createTransactionDto.total;
-    await this.transactionRepository.save(transaction);
+    await this.productRepository.manager.transaction(
+      async (transactionEntityManager) => {
+        const transaction = new Transaction();
+        transaction.total = createTransactionDto.contents.reduce(
+          (total, item) => total + item.price * item.quantity,
+          0,
+        );
 
-    for (const contents of createTransactionDto.contents) {
-      const product = await this.productRepository.findOneBy({
-        id: contents.productId,
-      });
+        const errors = [];
 
-      product.inventory -= contents.quantity;
+        for (const contents of createTransactionDto.contents) {
+          const product = await transactionEntityManager.findOneBy(Product, {
+            id: contents.productId,
+          });
 
-      await this.transactionContentsRepository.save({
-        ...contents,
-        transaction,
-        product,
-      });
-    }
+          if (!product) {
+            errors.push(`'El producto con ID ${contents.productId} no existe'`);
+            throw new NotFoundException(errors);
+          }
+
+          if (contents.quantity > product.inventory) {
+            errors.push(
+              `El articulo ${product.name} excede la cantidad disponible`,
+            );
+            throw new BadRequestException(errors);
+          }
+
+          product.inventory -= contents.quantity;
+
+          // Create TransactionContents instance
+
+          const transactionContent = new TransactionContents();
+          transactionContent.price = contents.price;
+          transactionContent.product = product;
+          transactionContent.quantity = contents.quantity;
+          transactionContent.transaction = transaction;
+
+          await transactionEntityManager.save(transaction);
+          await transactionEntityManager.save(transactionContent);
+        }
+      },
+    );
 
     return 'Venta guardada correctamente';
   }
