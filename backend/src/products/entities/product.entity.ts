@@ -1,4 +1,10 @@
-import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  Entity,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+  RelationId,
+} from 'typeorm';
 import { Category } from '../../categories/entities/category.entity';
 
 @Entity()
@@ -25,4 +31,7 @@ export class Product {
 
   @ManyToOne(() => Category)
   category: Category;
+
+  @RelationId((product: Product) => product.category)
+  categoryId: number;
 }

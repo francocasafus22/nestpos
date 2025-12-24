@@ -3,12 +3,7 @@ import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Category } from './entities/category.entity';
-import {
-  FindManyOptions,
-  FindOneOptions,
-  FindOptions,
-  Repository,
-} from 'typeorm';
+import { FindOneOptions, Repository } from 'typeorm';
 import { GetCategoryQueryDto } from './dto/get-category.dto';
 
 @Injectable()
