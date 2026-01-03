@@ -52,12 +52,12 @@ export class CouponsService {
     const coupon = await this.couponRepository.findOneBy({
       name: applyCouponDto.name,
     });
-    if (!coupon) throw new NotFoundException(['El cupón no existe']);
+    if (!coupon) throw new NotFoundException('El cupón no existe');
 
     const today = new Date();
     const expirationDate = endOfDay(coupon.expirationDate);
     if (isAfter(today, expirationDate)) {
-      throw new UnprocessableEntityException(['El cupón está expirado']);
+      throw new UnprocessableEntityException('El cupón está expirado');
     }
     return { message: 'Cupón válido', ...coupon };
   }

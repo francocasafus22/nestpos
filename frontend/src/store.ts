@@ -1,20 +1,27 @@
 import { create } from "zustand";
-import { Product, ShoopingCart } from "./schemas";
+import { Coupon, CouponResponseSchema, Product, ShoopingCart } from "./schemas";
 import { devtools } from "zustand/middleware";
 
 interface Store {
   total: number;
   contents: ShoopingCart;
+  coupon: Coupon;
   addToCart: (product: Product) => void;
   updateQuantity: (id: Product["id"], quantity: number) => void;
   removeFromCart: (id: Product["id"]) => void;
   calculateTotal: () => void;
+  applyCoupon: (couponName: string) => Promise<void>;
 }
 
 export const useStore = create<Store>()(
   devtools((set, get) => ({
     total: 0,
     contents: [],
+    coupon: {
+      percentage: 0,
+      name: "",
+      message: "",
+    },
     calculateTotal: () => {
       const total = get().contents.reduce(
         (t, item) => item.price * item.quantity + t,
@@ -69,6 +76,19 @@ export const useStore = create<Store>()(
         contents: state.contents.filter((item) => item.productId !== id),
       }));
       get().calculateTotal();
+    },
+    applyCoupon: async (couponName) => {
+      const req = await fetch("/coupons/api", {
+        method: "POST",
+        body: JSON.stringify({
+          name: couponName,
+        }),
+      });
+      const json = await req.json();
+      const coupon = CouponResponseSchema.parse(json);
+      set(() => ({
+        coupon,
+      }));
     },
   })),
 );

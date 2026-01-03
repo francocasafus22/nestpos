@@ -4,6 +4,7 @@ import { useStore } from "@/src/store";
 import ShoopingCartItem from "./ShoopingCartItem";
 import { formatCurrency } from "@/src/utils";
 import Amount from "./amount";
+import CouponForm from "./CouponForm";
 
 export default function ShoppingCart() {
   const { contents, total } = useStore((state) => state);
@@ -18,10 +19,11 @@ export default function ShoppingCart() {
           {contents.map((item) => (
             <ShoopingCartItem key={item.productId} item={item} />
           ))}
-          <dl className="space-y-6 py-6 text-sm font-medium text-gray-500">
-            <Amount label="Total a Pagar" amount={total} />
-          </dl>
         </ul>
+        <dl className="space-y-6 py-6 border-t border-gray-300 text-sm font-medium text-gray-500">
+          <Amount label="Total a Pagar" amount={total} />
+        </dl>
+        <CouponForm />
       </aside>
     )
   );
