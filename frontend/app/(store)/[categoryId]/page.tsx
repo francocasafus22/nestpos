@@ -6,7 +6,9 @@ type Params = Promise<{ categoryId: string }>;
 
 async function getProducts(categoryId: string) {
   const url = `${process.env.API_URL}/categories/${categoryId}?showProducts=true`;
-  const req = await fetch(url);
+  const req = await fetch(url, {
+    next: { tags: ["products-by-category"] },
+  });
   const json = await req.json();
   if (!req.ok) {
     redirect("/1");
@@ -19,11 +21,13 @@ export default async function CategoryPage({ params }: { params: Params }) {
   const { categoryId } = await params;
   const category = await getProducts(categoryId);
 
-  return (
+  return category ? (
     <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
       {category.products.map((product) => (
         <ProductCard key={product.id} product={product} />
       ))}
     </div>
+  ) : (
+    <p className="text-center font-bold w-full">Cargando...</p>
   );
 }

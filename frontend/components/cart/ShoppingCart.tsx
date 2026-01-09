@@ -4,6 +4,7 @@ import { useStore } from "@/src/store";
 import ShoopingCartItem from "./ShoopingCartItem";
 import Amount from "./amount";
 import CouponForm from "./CouponForm";
+import SubmitOrderForm from "./SubmitOrderForm";
 
 export default function ShoppingCart() {
   const { contents, total, discount } = useStore((state) => state);
@@ -26,6 +27,7 @@ export default function ShoppingCart() {
           <Amount label="Total a Pagar" amount={total} />
         </dl>
         <CouponForm />
+        <SubmitOrderForm />
       </aside>
     )
   );
