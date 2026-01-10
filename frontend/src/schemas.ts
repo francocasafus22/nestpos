@@ -60,6 +60,29 @@ export const ErrorResponseSchema = z.object({
   statusCode: z.number(),
 });
 
+export const ContentsSchema = z.object({
+  id: z.number(),
+  quantity: z.number(),
+  price: z.string(),
+  product: ProductSchema,
+});
+export const TransactionResponseSchema = z.object({
+  id: z.number(),
+  total: z.string(),
+  transactionDate: z.string(),
+  discount: z.string(),
+  coupon: z.string().nullable(),
+  contents: z.array(ContentsSchema),
+});
+
+export const TransactionsResponseSchema = z.object({
+  transactions: z.array(TransactionResponseSchema),
+  total: z.number(),
+  totalPages: z.number(),
+  page: z.number(),
+});
+
+export type Transaction = z.infer<typeof TransactionResponseSchema>;
 export const ShoopingCartSchema = z.array(ShoopingCartContentsSchema);
 export type Product = z.infer<typeof ProductSchema>;
 export type Category = z.infer<typeof CategorySchema>;
