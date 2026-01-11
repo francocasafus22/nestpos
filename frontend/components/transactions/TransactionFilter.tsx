@@ -1,26 +1,32 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 import { format } from "date-fns";
 import { useQuery } from "@tanstack/react-query";
 import { getSalesByDate } from "@/src/api";
 import TransactionSummary from "./TransactionSummary";
-import { formatCurrency } from "@/src/utils";
+import { formatCurrency, isValidPage } from "@/src/utils";
+import Pagination from "../ui/Pagination";
+import { redirect } from "next/navigation";
 
 type ValuePiece = Date | null;
 type Value = ValuePiece | [ValuePiece, ValuePiece];
 
-export default function TransactionFilter() {
+export default function TransactionFilter({ page }: { page: string }) {
   const [date, setDate] = useState<Value>(new Date());
+
+  if (!isValidPage(+page)) redirect("/admin/sales?page=1");
 
   const formattedDate = format(date?.toString() || new Date(), "yyyy-MM-dd");
 
   const { data, isLoading } = useQuery({
-    queryKey: ["sales", formattedDate],
-    queryFn: () => getSalesByDate(formattedDate),
+    queryKey: ["sales", formattedDate, page],
+    queryFn: () => getSalesByDate(formattedDate, page),
   });
+
+  if (data) if (+page > data.totalPages) redirect("/admin/sales?page=1");
 
   const total =
     data?.transactions.reduce(
@@ -53,6 +59,14 @@ export default function TransactionFilter() {
           Total del día: {""}
           <span className="font-normal">{formatCurrency(total)}</span>
         </p>
+
+        {data && (
+          <Pagination
+            page={+page}
+            totalPages={data.totalPages}
+            baseURL="/admin/sales"
+          />
+        )}
       </div>
     </div>
   );

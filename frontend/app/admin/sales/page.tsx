@@ -7,13 +7,25 @@ import {
   HydrationBoundary,
 } from "@tanstack/react-query";
 import { getSalesByDate } from "@/src/api";
+import { isValidPage } from "@/src/utils";
+import { redirect } from "next/navigation";
 
-export default async function SalesPage() {
+type SearchParams = Promise<{ page: string }>;
+
+export default async function SalesPage({
+  searchParams,
+}: {
+  searchParams: SearchParams;
+}) {
   const queryClient = new QueryClient();
   const today = format(new Date(), "yyyy-MM-dd");
+
+  const { page } = await searchParams;
+  if (!isValidPage(+page)) redirect("/admin/sales?page=1");
+
   await queryClient.prefetchQuery({
-    queryKey: ["sales", today],
-    queryFn: () => getSalesByDate(today),
+    queryKey: ["sales", today, page],
+    queryFn: () => getSalesByDate(today, page),
   });
 
   return (
@@ -24,7 +36,7 @@ export default async function SalesPage() {
         filtrar por fecha.
       </p>
       <HydrationBoundary state={dehydrate(queryClient)}>
-        <TransactionFilter />
+        <TransactionFilter page={page} />
       </HydrationBoundary>
     </>
   );
