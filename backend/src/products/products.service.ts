@@ -98,12 +98,12 @@ export class ProductsService {
     }
 
     await this.productRepository.save(product);
-    return `Producto actualizado correctamente`;
+    return { message: `Producto actualizado correctamente` };
   }
 
   async remove(id: number) {
     const product = await this.findOne(id);
     await this.productRepository.remove(product);
-    return 'Producto eliminado correctamente';
+    return { message: 'Producto eliminado correctamente' };
   }
 }
